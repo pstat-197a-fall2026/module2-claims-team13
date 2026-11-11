@@ -17,10 +17,9 @@ knitr::opts_knit$set(root.dir = normalizePath(".."))
 library(tidyverse)
 library(tidymodels)
 library(textrecipes)
-library(textrecipes)
 
-source("scripts/preprocessing.R")
-load("data/claims-raw.RData")
+source("../scripts/preprocessing.R")
+load("../data/claims-raw.RData")
 ```
 
 ## Extract text
@@ -100,7 +99,7 @@ paragraph_cv <- tune_grid(
 collect_metrics(paragraph_cv)
 ```
 
-Results of this show that 40 componenets has the greatest accuracy. We run with more components to see where improvement levels off.
+Results of this show that 40 components has the greatest accuracy. We run with more components to see where improvement levels off.
 
 ```{r}
 component_grid <- tibble(
@@ -154,7 +153,8 @@ header_recipe <- recipe(
 header_workflow <- workflow() %>%
   add_recipe(header_recipe) %>%
   add_model(paragraph_model)
-  ```
+
+```
 
 ## assigning same cv splits as training
 ```{r assigning-same-cv-splits}
@@ -187,7 +187,7 @@ header_folds <- manual_rset(
 )
 ```
 
-## compontent testing for headers to find the best tuned model for headers
+## component testing for headers to find the best tuned model for headers
 ```{r component-testing-for-headers}
 header_grid <- tibble(
   num_comp = c(5L, 10L, 20L, 40L, 60L, 80L, 100L)
@@ -213,8 +213,7 @@ best_header <- select_best(header_cv, metric = "accuracy")
 header_fit <- header_workflow %>%
   finalize_workflow(best_header) %>%
   fit(data = train_headers)
-  ```
-
+```
 
 ## evaluating both models
 ```{r evaluating-both-models}
