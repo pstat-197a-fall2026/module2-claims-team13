@@ -19,8 +19,8 @@ library(tidymodels)
 library(textrecipes)
 library(textrecipes)
 
-source("scripts/preprocessing.R")
-load("data/claims-raw.RData")
+source("../scripts/preprocessing.R")
+load("../data/claims-raw.RData")
 ```
 
 ## Extract text
@@ -154,7 +154,7 @@ header_recipe <- recipe(
 header_workflow <- workflow() %>%
   add_recipe(header_recipe) %>%
   add_model(paragraph_model)
-  ```
+```
 
 ## assigning same cv splits as training
 ```{r assigning-same-cv-splits}
@@ -213,8 +213,7 @@ best_header <- select_best(header_cv, metric = "accuracy")
 header_fit <- header_workflow %>%
   finalize_workflow(best_header) %>%
   fit(data = train_headers)
-  ```
-
+```
 
 ## evaluating both models
 ```{r evaluating-both-models}
