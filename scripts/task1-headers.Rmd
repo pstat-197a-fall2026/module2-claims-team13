@@ -1,0 +1,246 @@
+---
+title: "Task 1: Does including headings improve classification?"
+author: "Jacob Low"
+output: pdf_document
+---
+
+## Objective
+
+Compare binary classification accuracy using paragraph text alone
+versus paragraph text plus HTML headings.
+
+## Setup
+
+```{r setup}
+knitr::opts_knit$set(root.dir = normalizePath(".."))
+
+library(tidyverse)
+library(tidymodels)
+library(textrecipes)
+library(textrecipes)
+
+source("scripts/preprocessing.R")
+load("data/claims-raw.RData")
+```
+
+## Extract text
+
+```{r extract}
+paragraphs_only <- parse_data(claims_raw)
+with_headers <- parse_data(claims_raw, include_headers = TRUE)
+
+stopifnot(identical(paragraphs_only$.id, with_headers$.id))
+```
+
+## Split data into training and test sets
+
+```{r split}
+set.seed(200)
+split <- initial_split(
+  paragraphs_only,
+  prop = 0.8,
+  strata = bclass
+)
+
+train_paragraphs <- training(split)
+test_paragraphs <- testing(split)
+
+train_headers <- with_headers %>%
+  filter(.id %in% train_paragraphs$.id)
+
+test_headers <- with_headers %>%
+  filter(.id %in% test_paragraphs$.id)
+```
+
+## Paragraph only
+
+```{r paragraph-only}
+
+paragraph_recipe <- recipe(
+  bclass ~ text_clean,
+  data = train_paragraphs
+) %>%
+  step_tokenize(text_clean) %>%
+  step_stopwords(text_clean) %>%
+  step_tokenfilter(text_clean, max_tokens = 1000) %>%
+  step_tfidf(text_clean) %>%
+  step_zv(all_predictors()) %>%
+  step_pca(all_numeric_predictors(), num_comp = tune())
+```
+
+## logistic regression setup
+
+```{r logistic-regression-setup}
+paragraph_model <- logistic_reg() %>%
+  set_engine("glm") %>%
+  set_mode("classification")
+paragraph_workflow <- workflow() %>%
+  add_recipe(paragraph_recipe) %>%
+  add_model(paragraph_model)
+```
+
+
+## cross validation
+
+```{r cross-validation}
+set.seed(200)
+cv_folds <- vfold_cv(train_paragraphs, v = 5, strata = bclass)
+
+component_grid <- tibble(
+  num_comp = c(5L, 10L, 20L, 40L)
+)
+
+paragraph_cv <- tune_grid(
+  paragraph_workflow,
+  resamples = cv_folds,
+  grid = component_grid,
+  metrics = metric_set(accuracy)
+)
+
+collect_metrics(paragraph_cv)
+```
+
+Results of this show that 40 componenets has the greatest accuracy. We run with more components to see where improvement levels off.
+
+```{r}
+component_grid <- tibble(
+  num_comp = c(40L, 60L, 80L, 100L)
+)
+
+paragraph_cv <- tune_grid(
+  paragraph_workflow,
+  resamples = cv_folds,
+  grid = component_grid,
+  metrics = metric_set(accuracy)
+)
+
+collect_metrics(paragraph_cv)
+```
+
+80 components seems to have performed the best among the tested values.
+
+```{r}
+best_paragraph <- select_best(
+  paragraph_cv,
+  metric = "accuracy"
+)
+
+best_paragraph
+final_paragraph_workflow <- finalize_workflow(
+  paragraph_workflow,
+  best_paragraph
+)
+
+paragraph_fit <- fit(
+  final_paragraph_workflow,
+  data = train_paragraphs
+)
+```
+
+## including header
+
+```{r including-header}
+header_recipe <- recipe(
+  bclass ~ text_clean,
+  data = train_headers
+) %>%
+  step_tokenize(text_clean) %>%
+  step_stopwords(text_clean) %>%
+  step_tokenfilter(text_clean, max_tokens = 1000) %>%
+  step_tfidf(text_clean) %>%
+  step_zv(all_predictors()) %>%
+  step_pca(all_numeric_predictors(), num_comp = tune())
+
+header_workflow <- workflow() %>%
+  add_recipe(header_recipe) %>%
+  add_model(paragraph_model)
+  ```
+
+## assigning same cv splits as training
+```{r assigning-same-cv-splits}
+header_splits <- purrr::map(cv_folds$splits, function(s) {
+
+  train_rows <- match(
+    analysis(s)$.id,
+    train_headers$.id
+  )
+
+  validation_rows <- match(
+    assessment(s)$.id,
+    train_headers$.id
+  )
+
+  stopifnot(!anyNA(train_rows), !anyNA(validation_rows))
+
+  make_splits(
+    list(
+      analysis = train_rows,
+      assessment = validation_rows
+    ),
+    data = train_headers
+  )
+})
+
+header_folds <- manual_rset(
+  splits = header_splits,
+  ids = cv_folds$id
+)
+```
+
+## compontent testing for headers to find the best tuned model for headers
+```{r component-testing-for-headers}
+header_grid <- tibble(
+  num_comp = c(5L, 10L, 20L, 40L, 60L, 80L, 100L)
+)
+
+set.seed(200)
+
+header_cv <- tune_grid(
+  header_workflow,
+  resamples = header_folds,
+  grid = header_grid,
+  metrics = metric_set(accuracy)
+)
+
+collect_metrics(header_cv)
+```
+
+Our results show that the best tuned model for headers uses 80 components.
+
+```{r selecting-best-header-model}
+best_header <- select_best(header_cv, metric = "accuracy")
+
+header_fit <- header_workflow %>%
+  finalize_workflow(best_header) %>%
+  fit(data = train_headers)
+  ```
+
+
+## evaluating both models
+```{r evaluating-both-models}
+paragraph_test_predictions <- predict(
+  paragraph_fit,
+  new_data = test_paragraphs
+) %>%
+  bind_cols(test_paragraphs %>% select(.id, bclass))
+
+header_test_predictions <- predict(
+  header_fit,
+  new_data = test_headers
+) %>%
+  bind_cols(test_headers %>% select(.id, bclass))
+  bind_rows(
+  accuracy(
+    paragraph_test_predictions,
+    truth = bclass,
+    estimate = .pred_class
+  ) %>% mutate(version = "Paragraphs only"),
+
+  accuracy(
+    header_test_predictions,
+    truth = bclass,
+    estimate = .pred_class
+  ) %>% mutate(version = "Paragraphs + headings")
+) %>%
+  select(version, .metric, .estimate)
+```
