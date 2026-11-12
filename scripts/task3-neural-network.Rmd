@@ -1,0 +1,123 @@
+---
+title: "Task 3: Build and Train a Neural Network"
+author: Daniel Nickolov
+output: pdf_document
+---
+
+
+## Objectives
+
+* Build and train a neural network
+* Find a model that performs at least as well as the PC logistic regression from task 1
+* Quantify the predictive accuracy
+
+## Setup
+
+```{r libraries}
+library(tidyverse)
+library(tidymodels)
+library(keras3)
+```
+
+## Load data and partition
+
+```{r data}
+load('../data/claims-clean-example.RData')
+
+set.seed(110122)
+partitions <- claims_clean %>%
+  initial_split(prop = 0.8)
+
+train_text <- training(partitions) %>%
+  pull(text_clean)
+train_labels <- training(partitions) %>%
+  pull(bclass) %>%
+  as.numeric() - 1
+
+test_text <- testing(partitions) %>%
+  pull(text_clean)
+test_labels <- testing(partitions) %>%
+  pull(bclass) %>%
+  as.numeric() - 1
+```
+
+## Preprocess Layer
+
+```{r preprocess}
+preprocess_layer <- layer_text_vectorization(
+  standardize = NULL,
+  split = 'whitespace',
+  ngrams = NULL,
+  max_tokens = NULL,
+  output_mode = 'tf_idf'
+)
+
+preprocess_layer %>% adapt(train_text)
+```
+
+## NN Architecture
+
+```{r architecture}
+inputs <- layer_input(shape = 1, dtype = 'string')
+
+outputs <- inputs %>%
+  preprocess_layer() %>%
+  layer_dropout(0.2) %>%
+  layer_dense(units = 25, activation = 'relu') %>%
+  layer_dropout(0.2) %>%
+  layer_dense(1, activation = 'sigmoid')
+
+model <- keras_model(inputs, outputs)
+
+summary(model)
+```
+
+## Training the model
+
+```{r train}
+# configure for training
+model %>% compile(
+  loss = 'binary_crossentropy',
+  optimizer = 'adam',
+  metrics = 'binary_accuracy'
+)
+
+# train
+history <- model %>%
+  fit(train_text,
+      train_labels,
+      validation_split = 0.3,
+      epochs = 5)
+
+plot(history)
+```
+
+
+## Checking Test Set Accuracy
+
+```{r test}
+evaluate(model, test_text, test_labels)
+
+# predictions and confusion matrix
+test_probs <- predict(model, test_text) %>% as.numeric()
+
+test_results <- tibble(
+  truth = factor(test_labels, levels = c(0, 1)),
+  pred = factor(as.numeric(test_probs > 0.5), levels = c(0, 1))
+)
+
+accuracy(test_results, truth = truth, estimate = pred)
+conf_mat(test_results, truth = truth, estimate = pred)
+```
+
+Comparing this to our accuracy in preliminary task 1 of about 77.38%, we notice a close to 5% improvement in prediction accuracy running the neural network over the PC logistic regression, getting about 0.82% accuracy here.
+
+## Save model
+
+```{r save, eval=FALSE}
+save_model(model, '../results/task3-model.keras')
+```
+
+
+
+
