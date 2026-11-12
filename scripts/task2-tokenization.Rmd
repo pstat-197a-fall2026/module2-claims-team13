@@ -19,6 +19,7 @@ library(tidymodels)
 library(tokenizers)
 library(textstem)
 library(stopwords)
+library(textrecipes)
 
 source("../scripts/preprocessing.R")
 load("../data/claims-clean-example.RData") # I had too many memory issues so I'm using the example cleaned data
