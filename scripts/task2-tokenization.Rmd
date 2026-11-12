@@ -1,0 +1,104 @@
+---
+title: "Task 2: Do Bigrams Capture Additional Information?"
+author: Daniel Nickolov
+output: pdf_document
+---
+
+## Objectives
+
+* Perform a secondary tokenization of the data to obtain bigrams
+* Fit a logistic principal component regression model to the word-tokenized data
+
+## Setup
+
+```{r setup}
+knitr::opts_knit$set(root.dir = normalizePath(".."))
+
+library(tidyverse)
+library(tidymodels)
+library(tokenizers)
+library(textstem)
+library(stopwords)
+
+source("../scripts/preprocessing.R")
+load("../data/claims-clean-example.RData") # I had too many memory issues so I'm using the example cleaned data
+
+claims_df <- claims_clean %>%
+  filter(bclass %in% c("Relevant claim content", "N/A: No relevant content.")) %>%
+  mutate(
+    doc_id = row_number(),
+    claim_target = factor(if_else(bclass == "Relevant claim content", 1, 0), levels = c("1", "0")) # making into binary for regression purposes
+  ) %>%
+  select(doc_id, text_clean, claim_target)
+```
+
+# Tokenization
+
+## Fitting to Word-Tokenized Data (Unigrams)
+
+```{r}
+set.seed(111126)
+unigram_recipe <- recipe(claim_target ~ text_clean + doc_id, data = claims_df) %>%
+  update_role(doc_id, new_role = "ID") %>%
+  step_tokenize(text_clean, token = "words") %>%
+  step_stopwords(text_clean) %>%
+  step_tokenfilter(text_clean, max_tokens = 1000) %>%
+  step_tf(text_clean) %>%
+  step_normalize(all_predictors()) %>%
+  step_pca(all_predictors(), num_comp = 20, prefix = "unigram_PC")
+
+unigram_prep <- prep(unigram_recipe)
+unigram_pcs <- bake(unigram_prep, new_data = NULL)
+
+fit_unigram <- glm(claim_target ~ . - doc_id, data = unigram_pcs, family = binomial)
+claims_df$log_odds_unigram <- predict(fit_unigram, newdata = unigram_pcs, type = "link")
+```
+
+## Fitting Bigrams
+
+```{r}
+set.seed(111126)
+bigram_recipe <- recipe(~ text_clean + doc_id, data = claims_df) %>%
+  update_role(doc_id, new_role = "ID") %>%
+  step_tokenize(text_clean, token = "ngrams", options = list(n = 2)) %>%
+  step_stopwords(text_clean) %>%
+  step_tokenfilter(text_clean, max_tokens = 1000) %>%
+  step_tf(text_clean) %>%
+  step_normalize(all_predictors()) %>%
+  step_pca(all_predictors(), num_comp = 10, prefix = "bigram_PC") # K = 10 bigram principle components
+
+bigram_prep <- prep(bigram_recipe)
+bigram_pcs <- bake(bigram_prep, new_data = NULL)
+```
+
+Now, we can stack the unigram and bigram PCs into one model and run an ANOVA test to determine if the bigrams do capture additional information.
+
+## Setup
+
+```{r}
+stacked_df <- claims_df %>%
+  select(doc_id, claim_target, log_odds_unigram) %>%
+  inner_join(bigram_pcs, by = "doc_id") %>%
+  select(-doc_id)
+
+fit_base <- glm(claim_target ~ log_odds_unigram, data = stacked_df, family = binomial)
+fit_stacked <- glm(claim_target ~ ., data = stacked_df, family = binomial)
+```
+
+## Running the ANOVA
+
+```{r}
+lrt_result <- anova(fit_base, fit_stacked, test = "Chisq")
+print(lrt_result)
+```
+Running the test, we get a $p\text{-value}$ of `r lrt_result$Pr(>Chi)[[2]]`, which is well above a standard level of significance of $\alpha=0.05$, meaning that when comparing unigram-tokenized data to bigram-tokenized data in this dataset, there isn't a significant difference in the information captured about a page.
+
+
+
+
+
+
+
+
+
+
