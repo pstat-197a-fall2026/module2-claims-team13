@@ -1,16 +1,28 @@
 ---
 title: "Summary of exploratory tasks"
-author: 'YOUR NAMES HERE'
+author: 'Daniel Nickolov, Jacob Low, Joyce Shu, Kiera Doan'
 date: today
 ---
 
 ### HTML scraping
 
-Does including header content improve predictions? Answer the question and provide quantitative evidence supporting your answer.
+Does including header content improve predictions? Answer the question and provide quantitative evidence supporting your answer. (need more quantitative evidence to support)
+
+We investigated whether including HTML header content would improve webpage classification by using two logistic regression models. One model used strictly the paragraph text while the other model used both the paragraph text and HTML header content. Both models used TF-IDF to convert extracted text into numerical features before using principal component analysis to reduce the number of predictors. Additionally, we used an 80/20 training/testing split and stratified by the binary classification label. We then used five-fold cross-validation to evaluate the different component values based on their classification accuracy.
+
+**[Final comparison pending: Insert the test accuracy of both models and explain whether including headings improved predictive performance.]**
+
+waiting on test accuracy numbers
+
+After evaluating, we discovered that both the strictly paragraph text and paragraph text with HTML header content models performed best with 80 components.
 
 ### Bigrams
 
-Do bigrams capture additional information relevant to the classification of interest? Answer the question, **briefly** describe what analysis you conducted to arrive at your answer, and provide quantitative evidence supporting your answer.
+Do bigrams capture additional information relevant to the classification of interest? Answer the question, **briefly** describe what analysis you conducted to arrive at your answer, and provide quantitative evidence supporting your answer. (would like to get the exact p-value)
+
+We investigated whether bigrams would be able to capture additional information relevant to the webpage classification. To do this, we first compared a baseline logistic regression model using unigram features with a model that incorporated bigram features. The bigram features were reduced to 10 components using principal component analysis before being added to the baseline model. We then used a likelihood ratio test to compare the models and determine whether including bigram information would improve the model.
+
+The likelihood ratio test produced a p-value greater than 0.05, suggesting that the addition of bigram features did not offer any statistically significant improvement to the strictly unigram model. Thus, our analysis was unable to find sufficient evidence that bigrams provided any statistical difference for our classification.
 
 ### Neural net
 
@@ -23,3 +35,11 @@ Summarize the neural network model you trained by desribing:
 -   training epochs
 
 -   predictive accuracy
+
+(would like to confirm the accuracy percentage)
+
+To classify webpages based on their text content, we developed a neural network model that used a text vectorization layer to convert input text into TF-IDF features. Our model would then use a dropout layer with a rate of 0.2 to prevent overfitting as well as a dense hidden layer that contained 25 neurons and ReLU activation before being fed into another dropout layer with a rate of 0.2. The last step in our neural network was a single-neuron output layer with sigmoid activation that performed binary classification. 
+
+Our neural network was trained using the Adam optimizer with binary cross-entropy as the loss function and binary accuracy as the evaluation metric. We trained our neural network for 5 epochs with 30% of our training data saved for validation during training. 
+
+When we finally fed in the testing dataset, our model was able to achieve a predictive accuracy of 0.82%.
