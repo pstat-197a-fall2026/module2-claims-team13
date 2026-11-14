@@ -92,7 +92,7 @@ fit_stacked <- glm(claim_target ~ ., data = stacked_df, family = binomial)
 lrt_result <- anova(fit_base, fit_stacked, test = "Chisq")
 print(lrt_result)
 ```
-Running the test, we get a $p\text{-value}$ of `r lrt_result$Pr(>Chi)[[2]]`, which is well above a standard level of significance of $\alpha=0.05$, meaning that when comparing unigram-tokenized data to bigram-tokenized data in this dataset, there isn't a significant difference in the information captured about a page.
+Running the test, we get a $p\text{-value}$ of `r lrt_result[["Pr(>Chi)"]][2]`, which is well above a standard level of significance of $\alpha=0.05$, meaning that when comparing unigram-tokenized data to bigram-tokenized data in this dataset, there isn't a significant difference in the information captured about a page.
 
 
 
