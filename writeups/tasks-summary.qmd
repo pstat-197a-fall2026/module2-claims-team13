@@ -10,32 +10,18 @@ We investigated whether including HTML header content would improve webpage clas
 
 In our preprocessing pipeline, we first tokenized the cleaned text, then removed stop words, capped our vocabulary at the top 1,000 tokens, applied TF-IDF weights, and removed any zero-variance predictors before using principal component analysis. We then used five-fold cross-validation to tune the different component values based on their classification accuracy on a grid of 5, 10, 20, 40, 60, 80, and 100 components. 
 
-After evaluating, we discovered that both the strictly paragraph text and paragraph text with HTML header content models performed best with 80 components with the strictly paragraph text model having an accuracy of 76.9% and the paragraph text with HTML header content model having an accuracy of 76.6%. When evaluated on the testing dataset, the strictly paragraph text model had an accuracy of 77.4% while the paragraph text with HTML header content model had an accuracy of 76.0%. The calculated difference between the strictly paragraph text model and the paragraph text with HTML header content model is found by 76.0%-77.4%=-1.4%. This shows that there is a decrease of 1.4 percentage points in accuracy when HTML header content is included. Thus, we concluded that our classification performance does not improve when including HTML header content.
+After evaluating, we discovered that both the strictly paragraph text and paragraph text with HTML header content models performed best with 80 components with the strictly paragraph text model having an accuracy of 76.9% and the paragraph text with HTML header content model having an accuracy of 76.6%. When evaluated on the testing dataset, the strictly paragraph text model had an accuracy of 77.4% while the paragraph text with HTML header content model had an accuracy of 76.0%. The calculated difference between the strictly paragraph text model and the paragraph text with HTML header content model is found by 76.0%-77.4%=-1.4%. This shows that there is a decrease of 1.4% in accuracy when HTML header content is included. Thus, we concluded that our classification performance does not improve when including HTML header content.
 
 ### Bigrams
 
-Do bigrams capture additional information relevant to the classification of interest? Answer the question, **briefly** describe what analysis you conducted to arrive at your answer, and provide quantitative evidence supporting your answer. (would like to get the exact p-value)
+We investigated whether bigrams would be able to capture additional information relevant to the webpage classification and found that no, bigrams do not capture additional information relevant to the webpage classification. To do this, we first constructed a baseline logistic regression model using unigram features. We tokenized the cleaned text data into individual words, removed stop words, capped the vocabulary at the top 1,000 tokens, computed term frequencies, and extracted 20 components using principal component analysis after normalizing the predictors to obtain our baseline predicted log odds. 
 
-We investigated whether bigrams would be able to capture additional information relevant to the webpage classification. To do this, we first compared a baseline logistic regression model using unigram features with a model that incorporated bigram features. The bigram features were reduced to 10 components using principal component analysis before being added to the baseline model. We then used a likelihood ratio test to compare the models and determine whether including bigram information would improve the model.
+We applied the same preprocessing steps to a bigram-tokenized text where our n=2. We reduced the top 1,000 bigram features to 10 components using principal component analysis before adding the 10 bigram components to the baseline model. We compared the baseline logistic regression model containing only the unigram log odds to the baseline model with the added bigram components by using a chi-squared likelihood ratio test to determine whether including bigram information would improve the model. 
 
-The likelihood ratio test produced a p-value greater than 0.05, suggesting that the addition of bigram features did not offer any statistically significant improvement to the strictly unigram model. Thus, our analysis was unable to find sufficient evidence that bigrams provided any statistical difference for our classification.
+The likelihood ratio test showed a deviance difference of 4.2207 with 10 degrees of freedom. This reduced our residual deviance from 2514.8 to 2510.6. We also observed a p-value of 0.9368 which is much greater than our general significance value of 0.05. Since 0.9368>0.05, we can deduce that the addition of bigrams did not offer any statistically significant improvement to the baseline logistic regression model. Thus, we can conclude that our analysis was unable to find sufficient evidence that bigrams provide statistical difference in webpage classification.
 
 ### Neural net
 
-Summarize the neural network model you trained by desribing:
+To classify webpages based on their text content, we developed a feedforward neural network model that used a text vectorization layer to convert input text into TF-IDF features. We first partitioned the cleaned dataset using an 80/20 training/testing split. Our model first uses a string input layer followed by a text vectorization layer that converts input text into 34,032 TF-IDF features. To prevent overfitting, our model passes the vectorized features through a dropout layer with a rate of 0.2. The features are then passed into a dense hidden layer that contains 25 neurons and ReLU activation before being fed into another dropout layer with a rate of 0.2. Finally, a single-neuron dense output layer with sigmoid activation outputs our predicted probabilities for binary classification. Our model is then left with a total of 850,851 trainable parameters. 
 
--   architecture
-
--   optimization and loss
-
--   training epochs
-
--   predictive accuracy
-
-(would like to confirm the accuracy percentage)
-
-To classify webpages based on their text content, we developed a neural network model that used a text vectorization layer to convert input text into TF-IDF features. Our model would then use a dropout layer with a rate of 0.2 to prevent overfitting as well as a dense hidden layer that contained 25 neurons and ReLU activation before being fed into another dropout layer with a rate of 0.2. The last step in our neural network was a single-neuron output layer with sigmoid activation that performed binary classification. 
-
-Our neural network was trained using the Adam optimizer with binary cross-entropy as the loss function and binary accuracy as the evaluation metric. We trained our neural network for 5 epochs with 30% of our training data saved for validation during training. 
-
-When we finally fed in the testing dataset, our model was able to achieve a predictive accuracy of 0.82%.
+Our neural network was compiled using the Adam optimizer with binary cross-entropy as the loss function and binary accuracy as the evaluation metric. We trained our model for 5 epochs with 30% of our training data saved for validation. While training, our training accuracy increased from 71.37% in epoch 1 to 93.07% in epoch 5. Our validation accuracy remained relatively stable at around 80.54%-81.13%. When we evaluated on the testing data we saved, our neural network had a predictive accuracy of 80.84% with a loss of 0.9857. Compared to our predictive accuracy of 77.38% in Task 1, we notice about a 3.4% improvement.
