@@ -6,15 +6,9 @@ date: today
 
 ### HTML scraping
 
-Does including header content improve predictions? Answer the question and provide quantitative evidence supporting your answer. (need more quantitative evidence to support)
-
 We investigated whether including HTML header content would improve webpage classification by using two logistic regression models. One model used strictly the paragraph text while the other model used both the paragraph text and HTML header content. Both models used TF-IDF to convert extracted text into numerical features before using principal component analysis to reduce the number of predictors. Additionally, we used an 80/20 training/testing split and stratified by the binary classification label. We then used five-fold cross-validation to evaluate the different component values based on their classification accuracy.
 
-**[Final comparison pending: Insert the test accuracy of both models and explain whether including headings improved predictive performance.]**
-
-waiting on test accuracy numbers
-
-After evaluating, we discovered that both the strictly paragraph text and paragraph text with HTML header content models performed best with 80 components.
+After evaluating, we discovered that both the strictly paragraph text and paragraph text with HTML header content models performed best with 80 components. On the testing dataset, the strictly paragraph text model had an accuracy of 77.4% while the paragraph text with HTML header content model had an accuracy of 76%. The calculated difference between the strictly paragraph text model and the paragraph text with HTML header content model is found by 76%-77.4%=-1.4%. This shows that there is a decrease of 1.4% in accuracy when HTML header content is included. Thus, we can conclude that our classification performance does not improve when including HTML header content.
 
 ### Bigrams
 
