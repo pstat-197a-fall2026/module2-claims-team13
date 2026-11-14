@@ -69,7 +69,10 @@ outputs <- inputs %>%
 
 model <- keras_model(inputs, outputs)
 
-summary(model)
+# Use ASCII output so the model table can compile with pdflatex.
+summary(model, print_fn = function(x, ...) {
+  cat(iconv(x, from = "UTF-8", to = "ASCII", sub = "-"), "\n")
+})
 ```
 
 ## Training the model
