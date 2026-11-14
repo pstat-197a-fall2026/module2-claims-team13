@@ -1,37 +1,25 @@
 ---
 title: "Predictive modeling of claims status"
-author: 'YOUR NAMES HERE'
+author: 'Daniel Nickolov, Jacob Low, Joyce Shu, Kiera Doan'
 date: today
 ---
 
 ### Abstract
 
-Provide a 3-5 sentence summary of your work on the primary task. Indicate what input data was used, what method was used for binary class predictions, what method was used for multiclass predictions, and what estimated accuracies were achieved.
+Header and paragraph content was scraped from the raw webpages and processed into term frequencies of word tokens. For binary classification, a two-layer neural network yielded an estimated 81.4% accuracy; for multiclass classification, a support vector machine gave 78% accuracy.
 
-> *Header and paragraph content was scraped from the raw webpages and processed into term frequencies of word tokens. For binary classification, a two-layer neural network yielded an estimated 81.4% accuracy; for multiclass classification, a support vector machine gave 78% accuracy.*
+Task 4 focused on developing predictive models to automatically classify webpages based on their claim content. Two classification tasks were completed. The first task was binary classification, which identified whether a webpage contained relevant claim content or did not contain relevant claim content. The second task was multiclass classification, which assigned each webpage to one of five categories: N/A, Physical Activity, Possible Fatality, Potentially Unlawful Activity, or Other Claim Content. For both tasks, multiple modeling approaches were compared to determine which provided the most accurate predictions.
 
 ### Preprocessing
 
-In one paragraph lay out your preprocessing pipeline. No need to provide exact step-by-step detail; just give an overview of the main components:
-
--   what text content was extracted from HTML
-
--   how text was cleaned
-
--   how cleaned text was represented quantitatively
+Before developing the models, the raw claims data needed to be processed because the webpages contained HTML rather than clean text that could be used directly for classification. Text was extracted from the paragraph sections of each webpage, and unnecessary content such as URLs, email addresses, punctuation, numbers, and symbols was removed. The remaining text was converted to lowercase and extra whitespace was removed to make the text more consistent across webpages. The cleaned text was then converted into numerical features using Term Frequency-Inverse Document Frequency (TF-IDF). This allowed the models to use the words and phrases within each webpage to identify patterns associated with the different claim categories. Both individual words and pairs of consecutive words were considered when preparing the text for the neural network models, while the SVM models used a selection of up to 5,000 text features.
 
 ### Methods
 
-Describe your final predictive models. Include one paragraph with details on the binary classification approach, and one on the multiclass approach. Include for each:
+For the binary classification task, two models were developed and compared: a neural network and a Support Vector Machine (SVM). The cleaned dataset was divided into an 80% training set and a 20% validation set, which allowed the models to be evaluated on webpages that were not used to train them. The neural network used the cleaned text to learn patterns associated with the two possible classifications, while the SVM provided a second modeling approach for comparison. The neural network achieved **79.72% predictive accuracy**, outperforming the SVM, which achieved **75.30% accuracy**. This represents an improvement of 4.42 percentage points and indicates that the neural network was more effective at distinguishing between webpages with and without relevant claim content.
 
--   what ML/statistical method was used
-
--   model specification and hyperparameter selection
-
--   training method
+For the multiclass classification task, a separate neural network and SVM were developed to predict which of the five claim categories best matched each webpage. The same 80/20 training-validation split was used so that the results could be compared consistently. The neural network achieved **77.16% predictive accuracy**, slightly outperforming the SVM, which achieved **76.20% accuracy**. This represents an improvement of 0.96 percentage points. Although the difference between the two models was smaller than in the binary classification task, the neural network still provided the more accurate predictions across the five categories.
 
 ### Results
 
-Indicate the predictive accuracy of the binary classifications and the multiclass classifications. Provide a table for each, and report sensitivity, specificity, and accuracy.[^1]
-
-[^1]: Read [this article](https://yardstick.tidymodels.org/articles/multiclass.html) on multiclass averaging.
+Overall, the neural networks achieved higher predictive accuracy than the SVMs for both classification tasks. The largest improvement occurred in binary classification, where the neural network performed 4.42 percentage points better than the SVM. For multiclass classification, the improvement was more modest at 0.96 percentage points. Based on these comparisons, the neural networks were selected as the preferred models for both tasks because they consistently achieved the highest predictive accuracy on the validation data.
